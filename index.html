@@ -384,6 +384,20 @@
     color:#FFF9F9;
   }
   #detailSheet .pill-btn{ margin-top:0; }
+  .pill-btn .btn-spinner{ display:none; }
+  .pill-btn.loading .btn-label{ display:none; }
+  .pill-btn.loading .btn-spinner{
+    display:block;
+    width:24px;
+    height:24px;
+    border-radius:50%;
+    border:2px solid rgba(15,15,15,0.15);
+    border-top-color:#0F0F0F;
+    animation:btn-spin .7s linear infinite;
+  }
+  @keyframes btn-spin{
+    to{ transform:rotate(360deg); }
+  }
 
   /* form sheet (add / edit) */
   #formSheet{
@@ -499,7 +513,10 @@
         <span class="input-caption">ккал</span>
       </label>
     </div>
-    <button class="pill-btn" id="formSubmitBtn">Добавить</button>
+    <button class="pill-btn" id="formSubmitBtn">
+      <span class="btn-label">Добавить</span>
+      <span class="btn-spinner"></span>
+    </button>
   </div>
 </div>
 
@@ -552,7 +569,8 @@
     formTitle: document.getElementById('formTitle'),
     inputWeight: document.getElementById('inputWeight'),
     inputCalories: document.getElementById('inputCalories'),
-    formSubmitBtn: document.getElementById('formSubmitBtn')
+    formSubmitBtn: document.getElementById('formSubmitBtn'),
+    formSubmitLabel: document.querySelector('#formSubmitBtn .btn-label')
   };
 
   var formMode = 'add'; // 'add' | 'edit'
@@ -700,7 +718,7 @@
     els.inputWeight.value = base ? fmtWeight(base.weight) : '';
     els.inputCalories.value = base ? fmtCalories(base.calories) : '';
     els.formTitle.textContent = mode === 'edit' ? 'Редактирование' : 'Новая запись';
-    els.formSubmitBtn.textContent = mode === 'edit' ? 'Сохранить' : 'Добавить';
+    els.formSubmitLabel.textContent = mode === 'edit' ? 'Сохранить' : 'Добавить';
 
     showSheet(els.formSheet);
   }
@@ -711,6 +729,7 @@
     if (weight === null || weight <= 0 || calories === null || calories < 0) return;
 
     els.formSubmitBtn.disabled = true;
+    els.formSubmitBtn.classList.add('loading');
 
     var request;
     if (formMode === 'edit' && formEditId !== null){
@@ -735,6 +754,7 @@
       alert('Не удалось сохранить. Проверьте соединение и попробуйте ещё раз.');
     }).then(function(){
       els.formSubmitBtn.disabled = false;
+      els.formSubmitBtn.classList.remove('loading');
     });
   }
 
