@@ -1,0 +1,642 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<title>Запоминатор веса</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg-card:#0F0F0F;
+    --bg-card-2:#202023;
+    --text-primary:#ffffff;
+    --text-secondary:rgba(255,255,255,0.40);
+    --green:#34c759;
+    --red:#ff453a;
+    --divider:rgba(255,255,255,0.05);
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{height:100%;}
+  body{
+    margin:0;
+    min-height:100%;
+    display:flex;
+    align-items:flex-start;
+    justify-content:center;
+    background:#000;
+    font-family:"Inter Tight",-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",Roboto,sans-serif;
+    color:var(--text-primary);
+  }
+
+  .device{
+    position:relative;
+    width:100%;
+    max-width:430px;
+    min-height:100vh;
+    min-height:100dvh;
+    overflow:hidden;
+    background:#000000;
+  }
+  .bg-blob{
+    position:absolute;
+    border-radius:9999px;
+    pointer-events:none;
+  }
+  .bg-blob-teal{
+    width:284px;
+    height:236.63px;
+    left:46px;
+    top:-118.32px;
+    background:#00DFC5;
+    filter:blur(90px);
+  }
+  .bg-blob-white{
+    width:140.25px;
+    height:116.79px;
+    left:117px;
+    top:-58.40px;
+    background:#ffffff;
+    filter:blur(70px);
+    opacity:.9;
+  }
+  @media (min-width:481px){
+    body{ background:#050505; padding:24px 0; }
+    .device{
+      min-height:932px;
+      max-height:932px;
+      border-radius:44px;
+      box-shadow:0 30px 80px rgba(0,0,0,.65), 0 0 0 8px #111 , 0 0 0 9px #2a2a2a;
+    }
+  }
+
+  .main-content{
+    display:flex;
+    flex-direction:column;
+    height:100%;
+    min-height:100vh;
+    min-height:100dvh;
+    transition:filter .28s ease;
+  }
+  @media (min-width:481px){ .main-content{ min-height:932px; } }
+  .main-content.dimmed{ filter:blur(6px) brightness(.55); }
+
+  /* status bar */
+  .status-bar{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:16px 24px 0;
+    font-size:15px;
+    font-weight:600;
+    flex-shrink:0;
+  }
+  .status-bar .time{ letter-spacing:.2px; }
+  .status-icons{ display:flex; align-items:center; gap:6px; }
+
+  /* current weight */
+  .weight-header{
+    text-align:center;
+    padding:36px 24px 28px;
+    flex-shrink:0;
+  }
+  .weight-label{
+    font-size:17px;
+    line-height:20px;
+    font-weight:500;
+    color:#ffffff;
+    margin-bottom:12px;
+  }
+  .weight-value{
+    display:flex;
+    align-items:baseline;
+    justify-content:center;
+    gap:8px;
+  }
+  .weight-value #currentWeightValue{
+    font-size:64px;
+    line-height:64px;
+    font-weight:500;
+    letter-spacing:-1px;
+  }
+  .weight-value .unit{
+    font-size:40px;
+    line-height:64px;
+    font-weight:500;
+    color:#ffffff;
+  }
+
+  /* card / list */
+  .sheet-card{
+    flex:1;
+    min-height:0;
+    background:var(--bg-card);
+    border-radius:40px 40px 0 0;
+    padding:8px 21px 120px;
+    overflow-y:auto;
+    -webkit-overflow-scrolling:touch;
+  }
+  .month-title{
+    font-size:21px;
+    line-height:26px;
+    font-weight:500;
+    letter-spacing:0;
+    padding-left:8px;
+    margin:24px 0 12px;
+  }
+  .entry-item{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    height:72px;
+    padding-left:8px;
+    cursor:pointer;
+    background:none;
+    border:none;
+    border-bottom:1px solid transparent;
+    width:100%;
+    text-align:left;
+    color:inherit;
+    font:inherit;
+  }
+  .entry-item.with-divider{ border-bottom-color:var(--divider); }
+  .entry-left{ width:168px; flex-shrink:0; }
+  .entry-left .entry-weight{
+    display:flex;
+    align-items:center;
+    gap:4px;
+    font-size:17px;
+    line-height:20px;
+    font-weight:500;
+    letter-spacing:0;
+  }
+  .entry-arrow{ font-size:12px; line-height:1; }
+  .entry-arrow.up{ color:var(--green); }
+  .entry-arrow.down{ color:var(--red); }
+  .entry-calories{
+    font-size:17px;
+    line-height:20px;
+    font-weight:500;
+    letter-spacing:0;
+    color:var(--text-secondary);
+    margin-top:3px;
+  }
+  .entry-right{
+    display:flex;
+    align-items:center;
+    gap:12px;
+    color:var(--text-secondary);
+    font-size:17px;
+    line-height:20px;
+    font-weight:500;
+    flex-shrink:0;
+  }
+  .entry-chevron{
+    width:20px;
+    height:20px;
+    flex-shrink:0;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+  }
+  .entry-chevron::before{
+    content:'';
+    width:6px;
+    height:6px;
+    border-right:2px solid rgba(255,255,255,0.35);
+    border-top:2px solid rgba(255,255,255,0.35);
+    transform:rotate(45deg);
+  }
+
+  .empty-state{
+    color:var(--text-secondary);
+    text-align:center;
+    padding:48px 0;
+    font-size:15px;
+  }
+
+  /* FAB */
+  .fab{
+    position:absolute;
+    left:50%;
+    bottom:32px;
+    transform:translateX(-50%);
+    height:64px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    background:#ffffff;
+    color:#000000;
+    border:none;
+    border-radius:32px;
+    padding:0 32px;
+    font-size:17px;
+    line-height:20px;
+    font-weight:500;
+    letter-spacing:0;
+    box-shadow:0 10px 30px rgba(0,0,0,0.45);
+    z-index:15;
+    cursor:pointer;
+    white-space:nowrap;
+  }
+  .fab:active{ transform:translateX(-50%) scale(.97); }
+
+  /* backdrop */
+  .backdrop{
+    position:absolute;
+    inset:0;
+    background:rgba(0,0,0,0.5);
+    opacity:0;
+    pointer-events:none;
+    transition:opacity .3s ease;
+    z-index:20;
+  }
+  .backdrop.open{ opacity:1; pointer-events:auto; }
+
+  /* bottom sheets */
+  .bottom-sheet{
+    position:absolute;
+    left:0;
+    right:0;
+    bottom:0;
+    background:var(--bg-card);
+    border-radius:28px 28px 0 0;
+    padding:20px 24px calc(28px + env(safe-area-inset-bottom));
+    transform:translateY(105%);
+    transition:transform .32s cubic-bezier(.32,.72,0,1);
+    z-index:30;
+    max-height:80%;
+    overflow-y:auto;
+  }
+  .bottom-sheet.open{ transform:translateY(0); }
+
+  .close-btn{
+    position:absolute;
+    top:20px;
+    right:20px;
+    width:30px;
+    height:30px;
+    border-radius:50%;
+    background:rgba(255,255,255,0.12);
+    border:none;
+    color:#fff;
+    font-size:16px;
+    line-height:1;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    cursor:pointer;
+  }
+
+  /* detail sheet */
+  #detailSheet{ padding-top:56px; }
+  .detail-weight{
+    font-size:44px;
+    font-weight:700;
+    display:flex;
+    align-items:flex-start;
+    gap:8px;
+    margin-bottom:24px;
+  }
+  .detail-weight .unit{
+    font-size:20px;
+    font-weight:500;
+    color:rgba(255,255,255,0.7);
+    margin-top:8px;
+  }
+  .detail-weight .trend-arrow{
+    font-size:16px;
+    margin-top:6px;
+  }
+  .detail-row{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:16px 0;
+    font-size:16px;
+  }
+  .detail-row .row-label{ color:var(--text-secondary); }
+  .detail-divider{ height:1px; background:var(--divider); }
+
+  .pill-btn{
+    width:100%;
+    background:#ffffff;
+    color:#000000;
+    border:none;
+    border-radius:999px;
+    padding:18px;
+    font-size:17px;
+    line-height:20px;
+    font-weight:500;
+    letter-spacing:0;
+    margin-top:20px;
+    cursor:pointer;
+  }
+  .pill-btn:active{ transform:scale(.98); }
+
+  /* form sheet (add / edit) */
+  #formSheet{ padding-top:20px; }
+  .form-header{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    font-size:17px;
+    font-weight:600;
+    color:rgba(255,255,255,0.85);
+    margin-bottom:24px;
+    padding-right:40px;
+  }
+  .form-inputs{
+    display:flex;
+    gap:12px;
+  }
+  .input-box{
+    flex:1;
+    border-radius:20px;
+    padding:20px 12px 16px;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:6px;
+  }
+  .input-box.filled{ background:var(--bg-card-2); }
+  .input-box.outline{ background:transparent; border:1.5px solid rgba(255,255,255,0.28); }
+  .input-box input{
+    width:100%;
+    background:transparent;
+    border:none;
+    outline:none;
+    color:#fff;
+    font-size:34px;
+    font-weight:700;
+    text-align:center;
+    font-family:inherit;
+    padding:0;
+  }
+  .input-caption{
+    font-size:13px;
+    color:var(--text-secondary);
+  }
+
+  ::-webkit-scrollbar{ display:none; }
+</style>
+</head>
+<body>
+
+<div class="device">
+  <div class="main-content" id="mainContent">
+    <div class="bg-blob bg-blob-teal"></div>
+    <div class="bg-blob bg-blob-white"></div>
+    <div class="status-bar">
+      <span class="time">9:41</span>
+      <div class="status-icons">
+        <svg width="18" height="12" viewBox="0 0 18 12" fill="none"><rect x="0" y="7" width="3" height="5" rx="1" fill="#fff"/><rect x="5" y="5" width="3" height="7" rx="1" fill="#fff"/><rect x="10" y="3" width="3" height="9" rx="1" fill="#fff"/><rect x="15" y="0" width="3" height="12" rx="1" fill="#fff"/></svg>
+        <svg width="16" height="12" viewBox="0 0 16 12" fill="none"><path d="M8 10.5a1.2 1.2 0 100-2.4 1.2 1.2 0 000 2.4z" fill="#fff"/><path d="M4.8 7.2a4.5 4.5 0 016.4 0" stroke="#fff" stroke-width="1.3" fill="none"/><path d="M2.2 4.6a8.2 8.2 0 0111.6 0" stroke="#fff" stroke-width="1.3" fill="none"/></svg>
+        <svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x="0.75" y="0.75" width="20.5" height="10.5" rx="2.5" stroke="#fff" stroke-opacity=".5" stroke-width="1"/><rect x="2.25" y="2.25" width="16" height="7.5" rx="1.3" fill="#fff"/><path d="M22.5 4v4a2 2 0 000-4z" fill="#fff" fill-opacity=".5"/></svg>
+      </div>
+    </div>
+
+    <div class="weight-header">
+      <div class="weight-label">Текущий вес</div>
+      <div class="weight-value"><span id="currentWeightValue">—</span><span class="unit">кг</span></div>
+    </div>
+
+    <div class="sheet-card" id="sheetCard">
+      <div id="entriesList"></div>
+    </div>
+  </div>
+
+  <button class="fab" id="fabAdd">Новая запись</button>
+
+  <div class="backdrop" id="backdrop"></div>
+
+  <div class="bottom-sheet" id="detailSheet">
+    <button class="close-btn" data-close>×</button>
+    <div class="detail-weight">
+      <span id="detailWeightValue">—</span><span class="unit">кг</span><span class="trend-arrow" id="detailArrow"></span>
+    </div>
+    <div class="detail-row"><span class="row-label">Дата</span><span id="detailDate"></span></div>
+    <div class="detail-divider"></div>
+    <div class="detail-row"><span class="row-label">Каллорийность</span><span id="detailCalories"></span></div>
+    <button class="pill-btn" id="detailEditBtn">Редактировать</button>
+  </div>
+
+  <div class="bottom-sheet" id="formSheet">
+    <button class="close-btn" data-close>×</button>
+    <div class="form-header"><span id="formTitle">Новая запись</span></div>
+    <div class="form-inputs">
+      <label class="input-box filled">
+        <input id="inputWeight" type="text" inputmode="decimal" autocomplete="off" placeholder="0">
+        <span class="input-caption">киллограм</span>
+      </label>
+      <label class="input-box outline">
+        <input id="inputCalories" type="text" inputmode="numeric" autocomplete="off" placeholder="0">
+        <span class="input-caption">ккал</span>
+      </label>
+    </div>
+    <button class="pill-btn" id="formSubmitBtn">Добавить</button>
+  </div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  var MONTH_NOM = ['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
+  var MONTH_GEN = ['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря'];
+
+  var entries = [
+    { id: 1, weight: 82.4, calories: 3000, date: new Date(2026,3,20,8,0) },
+    { id: 2, weight: 82.0, calories: 2950, date: new Date(2026,4,5,8,15) },
+    { id: 3, weight: 81.8, calories: 3100, date: new Date(2026,4,18,9,30) },
+    { id: 4, weight: 81.5, calories: 3000, date: new Date(2026,4,30,12,55) },
+    { id: 5, weight: 81.3, calories: 3050, date: new Date(2026,5,1,8,0) },
+    { id: 6, weight: 81.0, calories: 2950, date: new Date(2026,5,10,8,20) },
+    { id: 7, weight: 80.6, calories: 2900, date: new Date(2026,5,24,7,50) },
+    { id: 8, weight: 80.9, calories: 3000, date: new Date(2026,6,2,8,45) },
+    { id: 9, weight: 80.2, calories: 2800, date: new Date(2026,6,15,9,12) }
+  ];
+  var nextId = 10;
+
+  var els = {
+    mainContent: document.getElementById('mainContent'),
+    currentWeightValue: document.getElementById('currentWeightValue'),
+    entriesList: document.getElementById('entriesList'),
+    fabAdd: document.getElementById('fabAdd'),
+    backdrop: document.getElementById('backdrop'),
+    detailSheet: document.getElementById('detailSheet'),
+    detailWeightValue: document.getElementById('detailWeightValue'),
+    detailArrow: document.getElementById('detailArrow'),
+    detailDate: document.getElementById('detailDate'),
+    detailCalories: document.getElementById('detailCalories'),
+    detailEditBtn: document.getElementById('detailEditBtn'),
+    formSheet: document.getElementById('formSheet'),
+    formTitle: document.getElementById('formTitle'),
+    inputWeight: document.getElementById('inputWeight'),
+    inputCalories: document.getElementById('inputCalories'),
+    formSubmitBtn: document.getElementById('formSubmitBtn')
+  };
+
+  var formMode = 'add'; // 'add' | 'edit'
+  var formEditId = null;
+  var activeDetailId = null;
+
+  function fmtWeight(n){
+    var s = n.toFixed(1);
+    if (s.slice(-2) === '.0') s = s.slice(0, -2);
+    return s.replace('.', ',');
+  }
+  function parseWeight(str){
+    var v = parseFloat(String(str).replace(',', '.'));
+    return isNaN(v) ? null : v;
+  }
+  function fmtCalories(n){ return String(Math.round(n)); }
+  function parseCalories(str){
+    var v = parseInt(String(str).replace(/[^\d]/g, ''), 10);
+    return isNaN(v) ? null : v;
+  }
+  function pad2(n){ return n < 10 ? '0' + n : '' + n; }
+  function fmtDate(d){
+    return d.getDate() + ' ' + MONTH_GEN[d.getMonth()] + ', ' + pad2(d.getHours()) + ':' + pad2(d.getMinutes());
+  }
+
+  function ascending(){ return entries.slice().sort(function(a,b){ return a.date - b.date; }); }
+  function descending(){ return entries.slice().sort(function(a,b){ return b.date - a.date; }); }
+
+  function trendMap(){
+    var asc = ascending();
+    var map = {};
+    for (var i = 0; i < asc.length; i++){
+      var prev = asc[i-1];
+      if (!prev) { map[asc[i].id] = null; continue; }
+      if (asc[i].weight > prev.weight) map[asc[i].id] = 'up';
+      else if (asc[i].weight < prev.weight) map[asc[i].id] = 'down';
+      else map[asc[i].id] = null;
+    }
+    return map;
+  }
+
+  function arrowGlyph(trend){
+    if (trend === 'up') return '<span class="entry-arrow up">▲</span>';
+    if (trend === 'down') return '<span class="entry-arrow down">▼</span>';
+    return '';
+  }
+
+  function render(){
+    var desc = descending();
+    els.currentWeightValue.textContent = desc.length ? fmtWeight(desc[0].weight) : '—';
+
+    if (!desc.length){
+      els.entriesList.innerHTML = '<div class="empty-state">Записей пока нет</div>';
+      return;
+    }
+
+    var trends = trendMap();
+    var html = '';
+    var currentGroupKey = null;
+
+    desc.forEach(function(entry, idx){
+      var groupKey = entry.date.getFullYear() + '-' + entry.date.getMonth();
+      var isNewGroup = groupKey !== currentGroupKey;
+      if (isNewGroup){
+        currentGroupKey = groupKey;
+        html += '<div class="month-title">' + MONTH_NOM[entry.date.getMonth()] + '</div>';
+      }
+      var nextEntry = desc[idx + 1];
+      var isLastInGroup = !nextEntry || (nextEntry.date.getFullYear() + '-' + nextEntry.date.getMonth()) !== groupKey;
+      html +=
+        '<button class="entry-item' + (isLastInGroup ? '' : ' with-divider') + '" data-id="' + entry.id + '">' +
+          '<div class="entry-left">' +
+            '<div class="entry-weight">' + fmtWeight(entry.weight) + ' кг ' + arrowGlyph(trends[entry.id]) + '</div>' +
+            '<div class="entry-calories">' + fmtCalories(entry.calories) + ' ккал</div>' +
+          '</div>' +
+          '<div class="entry-right"><span>' + fmtDate(entry.date) + '</span><span class="entry-chevron"></span></div>' +
+        '</button>';
+    });
+
+    els.entriesList.innerHTML = html;
+
+    Array.prototype.forEach.call(els.entriesList.querySelectorAll('.entry-item'), function(btn){
+      btn.addEventListener('click', function(){
+        openDetail(parseInt(btn.getAttribute('data-id'), 10));
+      });
+    });
+  }
+
+  function setDimmed(on){
+    els.mainContent.classList.toggle('dimmed', on);
+    els.backdrop.classList.toggle('open', on);
+    document.body.style.overflow = on ? 'hidden' : '';
+  }
+
+  function showSheet(sheetEl){
+    els.detailSheet.classList.remove('open');
+    els.formSheet.classList.remove('open');
+    setDimmed(true);
+    requestAnimationFrame(function(){ sheetEl.classList.add('open'); });
+  }
+
+  function closeAll(){
+    els.detailSheet.classList.remove('open');
+    els.formSheet.classList.remove('open');
+    setDimmed(false);
+    activeDetailId = null;
+  }
+
+  function openDetail(id){
+    var entry = entries.find(function(e){ return e.id === id; });
+    if (!entry) return;
+    activeDetailId = id;
+    var trend = trendMap()[id];
+    els.detailWeightValue.textContent = fmtWeight(entry.weight);
+    els.detailArrow.innerHTML = trend === 'up' ? '<span class="entry-arrow up">▲</span>' : (trend === 'down' ? '<span class="entry-arrow down">▼</span>' : '');
+    els.detailDate.textContent = fmtDate(entry.date);
+    els.detailCalories.textContent = fmtCalories(entry.calories) + ' ккал';
+    showSheet(els.detailSheet);
+  }
+
+  function openForm(mode, id){
+    formMode = mode;
+    formEditId = id || null;
+
+    var base = mode === 'edit' ? entries.find(function(e){ return e.id === id; }) : descending()[0];
+
+    els.inputWeight.value = base ? fmtWeight(base.weight) : '';
+    els.inputCalories.value = base ? fmtCalories(base.calories) : '';
+    els.formTitle.textContent = mode === 'edit' ? 'Редактирование' : 'Новая запись';
+    els.formSubmitBtn.textContent = mode === 'edit' ? 'Сохранить' : 'Добавить';
+
+    showSheet(els.formSheet);
+  }
+
+  function submitForm(){
+    var weight = parseWeight(els.inputWeight.value);
+    var calories = parseCalories(els.inputCalories.value);
+    if (weight === null || weight <= 0 || calories === null || calories < 0) return;
+
+    if (formMode === 'edit' && formEditId !== null){
+      var entry = entries.find(function(e){ return e.id === formEditId; });
+      if (entry){ entry.weight = weight; entry.calories = calories; }
+    } else {
+      entries.push({ id: nextId++, weight: weight, calories: calories, date: new Date() });
+    }
+
+    render();
+    closeAll();
+  }
+
+  els.fabAdd.addEventListener('click', function(){ openForm('add'); });
+  els.detailEditBtn.addEventListener('click', function(){ openForm('edit', activeDetailId); });
+  els.formSubmitBtn.addEventListener('click', submitForm);
+  els.backdrop.addEventListener('click', closeAll);
+
+  Array.prototype.forEach.call(document.querySelectorAll('[data-close]'), function(btn){
+    btn.addEventListener('click', closeAll);
+  });
+
+  render();
+})();
+</script>
+</body>
+</html>
