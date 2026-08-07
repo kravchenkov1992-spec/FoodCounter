@@ -18,7 +18,7 @@
     --divider:rgba(255,255,255,0.05);
   }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
-  html,body{height:100%;}
+  html,body{height:100%;overflow:hidden;overscroll-behavior:none;}
   body{
     margin:0;
     min-height:100%;
@@ -34,8 +34,8 @@
     position:relative;
     width:100%;
     max-width:430px;
-    min-height:100vh;
-    min-height:100dvh;
+    height:100vh;
+    height:100dvh;
     overflow:hidden;
     background:#000000;
   }
@@ -64,42 +64,28 @@
   @media (min-width:481px){
     body{ background:#050505; padding:24px 0; }
     .device{
-      min-height:932px;
-      max-height:932px;
+      height:932px;
       border-radius:44px;
       box-shadow:0 30px 80px rgba(0,0,0,.65), 0 0 0 8px #111 , 0 0 0 9px #2a2a2a;
     }
   }
 
   .main-content{
-    display:flex;
-    flex-direction:column;
-    height:100%;
-    min-height:100vh;
-    min-height:100dvh;
+    position:absolute;
+    inset:0;
     transition:filter .28s ease;
   }
-  @media (min-width:481px){ .main-content{ min-height:932px; } }
   .main-content.dimmed{ filter:blur(6px) brightness(.55); }
 
-  /* status bar */
-  .status-bar{
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
-    padding:16px 24px 0;
-    font-size:15px;
-    font-weight:600;
-    flex-shrink:0;
-  }
-  .status-bar .time{ letter-spacing:.2px; }
-  .status-icons{ display:flex; align-items:center; gap:6px; }
-
-  /* current weight */
+  /* current weight — fixed layer behind the scrolling list */
   .weight-header{
+    position:absolute;
+    top:0;
+    left:0;
+    right:0;
+    z-index:1;
     text-align:center;
-    padding:36px 24px 28px;
-    flex-shrink:0;
+    padding:calc(env(safe-area-inset-top) + 28px) 24px 28px;
   }
   .weight-label{
     font-size:17px;
@@ -127,15 +113,20 @@
     color:#ffffff;
   }
 
+  /* scrolling layer: slides up over the fixed weight-header/gradient */
+  .scroll-container{
+    position:absolute;
+    inset:0;
+    z-index:2;
+    overflow-y:auto;
+    -webkit-overflow-scrolling:touch;
+    overscroll-behavior-y:contain;
+  }
   /* card / list */
   .sheet-card{
-    flex:1;
-    min-height:0;
     background:var(--bg-card);
     border-radius:40px 40px 0 0;
     padding:8px 21px 120px;
-    overflow-y:auto;
-    -webkit-overflow-scrolling:touch;
   }
   .month-title{
     font-size:21px;
@@ -388,22 +379,17 @@
   <div class="main-content" id="mainContent">
     <div class="bg-blob bg-blob-teal"></div>
     <div class="bg-blob bg-blob-white"></div>
-    <div class="status-bar">
-      <span class="time">9:41</span>
-      <div class="status-icons">
-        <svg width="18" height="12" viewBox="0 0 18 12" fill="none"><rect x="0" y="7" width="3" height="5" rx="1" fill="#fff"/><rect x="5" y="5" width="3" height="7" rx="1" fill="#fff"/><rect x="10" y="3" width="3" height="9" rx="1" fill="#fff"/><rect x="15" y="0" width="3" height="12" rx="1" fill="#fff"/></svg>
-        <svg width="16" height="12" viewBox="0 0 16 12" fill="none"><path d="M8 10.5a1.2 1.2 0 100-2.4 1.2 1.2 0 000 2.4z" fill="#fff"/><path d="M4.8 7.2a4.5 4.5 0 016.4 0" stroke="#fff" stroke-width="1.3" fill="none"/><path d="M2.2 4.6a8.2 8.2 0 0111.6 0" stroke="#fff" stroke-width="1.3" fill="none"/></svg>
-        <svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x="0.75" y="0.75" width="20.5" height="10.5" rx="2.5" stroke="#fff" stroke-opacity=".5" stroke-width="1"/><rect x="2.25" y="2.25" width="16" height="7.5" rx="1.3" fill="#fff"/><path d="M22.5 4v4a2 2 0 000-4z" fill="#fff" fill-opacity=".5"/></svg>
-      </div>
-    </div>
 
-    <div class="weight-header">
+    <div class="weight-header" id="weightHeader">
       <div class="weight-label">Текущий вес</div>
       <div class="weight-value"><span id="currentWeightValue">—</span><span class="unit">кг</span></div>
     </div>
 
-    <div class="sheet-card" id="sheetCard">
-      <div id="entriesList"></div>
+    <div class="scroll-container" id="scrollContainer">
+      <div class="scroll-spacer" id="scrollSpacer"></div>
+      <div class="sheet-card" id="sheetCard">
+        <div id="entriesList"></div>
+      </div>
     </div>
   </div>
 
@@ -461,6 +447,10 @@
 
   var els = {
     mainContent: document.getElementById('mainContent'),
+    weightHeader: document.getElementById('weightHeader'),
+    scrollContainer: document.getElementById('scrollContainer'),
+    scrollSpacer: document.getElementById('scrollSpacer'),
+    sheetCard: document.getElementById('sheetCard'),
     currentWeightValue: document.getElementById('currentWeightValue'),
     entriesList: document.getElementById('entriesList'),
     fabAdd: document.getElementById('fabAdd'),
@@ -564,6 +554,13 @@
     });
   }
 
+  function layout(){
+    var headerH = els.weightHeader.offsetHeight;
+    els.scrollSpacer.style.height = headerH + 'px';
+    var viewportH = els.mainContent.clientHeight;
+    els.sheetCard.style.minHeight = Math.max(0, viewportH - headerH) + 'px';
+  }
+
   function setDimmed(on){
     els.mainContent.classList.toggle('dimmed', on);
     els.backdrop.classList.toggle('open', on);
@@ -635,7 +632,11 @@
     btn.addEventListener('click', closeAll);
   });
 
+  window.addEventListener('resize', layout);
+  window.addEventListener('load', layout);
+
   render();
+  layout();
 })();
 </script>
 </body>
